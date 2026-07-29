@@ -1,0 +1,14 @@
+[Unit]
+Description=DietPi-RAMlog
+After=local-fs.target var-log.mount boot.mount -.mount
+Before=syslog.service rsyslog.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStartPre=/bin/mkdir -p /var/lib/dietpi/logs
+ExecStart=/bin/dash -c '/boot/dietpi/func/dietpi-ramlog 0 >> /var/lib/dietpi/logs/dietpi-ramlog.log 2>&1'
+ExecStop=/bin/dash -c '/boot/dietpi/func/dietpi-ramlog 1 > /var/lib/dietpi/logs/dietpi-ramlog.log 2>&1'
+
+[Install]
+WantedBy=multi-user.target

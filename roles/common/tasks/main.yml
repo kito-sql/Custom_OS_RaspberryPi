@@ -1,0 +1,43 @@
+---
+- name: Ensure swap space is active (2GB)
+  command: /boot/dietpi/dietpi-swapfile 2048
+  args:
+    creates: /var/swap
+
+- name: Install system packages (APT)
+  apt:
+    name:
+      - network-manager
+      - python3-flask
+      - python3-qrcode
+      - python3-pil
+      - chromium-browser
+      - picom
+      - xdotool
+      - wmctrl
+      - python3-pyqt5
+      - python3-opencv
+      - python3-numpy
+      - python3-venv
+      - python3-pip
+      - vlc
+      - python3-websockets
+      - linux-libc-dev
+      - libc6-dev
+      - build-essential
+      - fbi
+      - xinit
+      - xserver-xorg
+      - feh
+      - openbox
+      - dbus-x11
+      - x11-xserver-utils
+    state: present
+    update_cache: true
+
+- name: Ensure NetworkManager is running and enabled
+  systemd:
+    name: NetworkManager
+    state: started
+    enabled: true
+    masked: false

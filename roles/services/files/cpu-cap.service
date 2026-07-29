@@ -1,0 +1,11 @@
+[Unit]
+Description=Cap CPU frequency to reduce heat
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/cpu-cap.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

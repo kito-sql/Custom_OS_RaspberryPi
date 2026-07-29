@@ -1,0 +1,10 @@
+[Unit]
+Description=DietPi-WiFi_Monitor
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/var/lib/dietpi/services/dietpi-wifi-monitor.sh
+
+[Install]
+WantedBy=multi-user.target

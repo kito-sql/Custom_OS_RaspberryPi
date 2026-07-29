@@ -1,0 +1,15 @@
+[Unit]
+Description=DietPi-PreBoot
+After=dietpi-ramlog.service
+Wants=network-pre.target
+Before=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+StandardOutput=journal+console
+SyslogIdentifier=DietPi-PreBoot
+ExecStart=/boot/dietpi/preboot
+
+[Install]
+WantedBy=multi-user.target

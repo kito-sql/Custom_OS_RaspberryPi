@@ -1,0 +1,12 @@
+[Unit]
+Description=DietPi-PostBoot
+After=dietpi-preboot.service
+
+[Service]
+Type=idle
+RemainAfterExit=yes
+StandardOutput=tty
+ExecStart=/boot/dietpi/postboot
+
+[Install]
+WantedBy=multi-user.target

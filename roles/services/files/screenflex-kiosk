@@ -1,0 +1,114 @@
+#!/bin/bash
+export DISPLAY=${DISPLAY:-:0}
+export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/tmp/screenflex-runtime}
+export EGL_PLATFORM=x11
+DBG="/tmp/screenflex-debug.log"
+
+log() {
+  echo "$(date +%s.%N) [kiosk-script] $*" >> "$DBG" 2>/dev/null || true
+}
+
+mkdir -p "$XDG_RUNTIME_DIR" 2>/dev/null || true
+chmod 700 "$XDG_RUNTIME_DIR" 2>/dev/null || true
+
+log "display rotation handled at boot; skipping runtime xrandr"
+
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+  eval "$(dbus-launch --sh-syntax --exit-with-session 2>/dev/null)" || true
+fi
+
+# Force X11 root window to solid black BEFORE the WM starts
+if command -v xsetroot >/dev/null 2>&1; then
+  xsetroot -solid "#000000" 2>/dev/null || true
+fi
+
+# The boot session starts these before the Wi-Fi overlay so they are already
+# compositing a black surface at handoff. Keep this launcher safe if used alone.
+if ! pgrep -u "$(id -u)" -x openbox >/dev/null 2>&1; then
+  openbox &
+else
+  log "reusing Openbox started by the boot session"
+fi
+
+if command -v picom >/dev/null 2>&1; then
+  if ! pgrep -u "$(id -u)" -x picom >/dev/null 2>&1; then
+    picom --backend xrender --use-damage --no-fading-openclose --config /dev/null &
+  else
+    log "reusing Picom started by the boot session"
+  fi
+fi
+
+# Re-enforce black root background immediately after WM and compositor startup
+if command -v xsetroot >/dev/null 2>&1; then
+  (xsetroot -solid "#000000"; sleep 0.2; xsetroot -solid "#000000"; sleep 0.5; xsetroot -solid "#000000") 2>/dev/null &
+fi
+
+# Keep root black
+xset -dpms s off s noblank 2>/dev/null || true
+
+WIDTH=720
+HEIGHT=1280
+if command -v xrandr >/dev/null 2>&1; then
+  GEOM=$(xrandr --current 2>/dev/null | grep -oE '[0-9]+x[0-9]+\+[0-9]+\+[0-9]+' | head -n 1 || echo "")
+  if [[ "${GEOM:-}" =~ ^([0-9]+)x([0-9]+)\+ ]]; then
+    WIDTH=${BASH_REMATCH[1]}
+    HEIGHT=${BASH_REMATCH[2]}
+  fi
+fi
+
+# --background-color=#000000 prevents white flash during Chromium/Electron window init
+CHROME_FLAGS=(
+  --kiosk
+  --background-color=#000000
+  --default-background-color=#000000
+  --blink-settings=primaryHoverType=2,availableHoverTypes=2
+  --start-fullscreen
+  --start-maximized
+  --no-sandbox
+  --force-frame-rate=5
+  --force-device-scale-factor=1
+  --disable-infobars
+  --disable-session-crashed-bubble
+  --disable-features=TranslateUI,Vulkan
+  --disable-vulkan
+  --wm-window-animations-disabled
+  --overscroll-history-navigation=0
+  --disable-pinch
+  --user-data-dir=/home/kiosk/.config/screenflex-player
+  --window-size=${WIDTH},${HEIGHT}
+  --window-position=0,0
+  --use-gl=swiftshader
+  --disable-gpu
+  --enable-gpu-rasterization
+  --ignore-gpu-blocklist
+  --disable-gpu-vsync
+  --disable-smooth-scrolling
+)
+
+cd "/opt/Screenflex Player" || cd /home/kiosk
+log "launching screenflex-player directly"
+taskset -c 2,3 /home/dietpi/screenflex-player "${CHROME_FLAGS[@]}" &
+PLAYER_PID=$!
+
+force_fullscreen() {
+  local win=""
+  win=$(xdotool search --name '^Screenflex$' 2>/dev/null | head -1 || true)
+  [ -n "${win:-}" ] || return 1
+  xdotool windowmove "$win" 0 0 2>/dev/null || true
+  xdotool windowsize "$win" "$WIDTH" "$HEIGHT" 2>/dev/null || true
+  if command -v wmctrl >/dev/null 2>&1; then
+    wmctrl -i -r "$win" -b add,fullscreen 2>/dev/null || true
+  fi
+  xdotool windowraise "$win" 2>/dev/null || true
+}
+
+# Wait for Screenflex player window to appear and size it
+for i in $(seq 1 60); do
+  if force_fullscreen; then
+    log "screenflex-player window found and fullscreened"
+    break
+  fi
+  sleep 0.5
+done
+
+wait "$PLAYER_PID"

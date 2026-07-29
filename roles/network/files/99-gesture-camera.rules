@@ -1,0 +1,1 @@
+KERNEL=="video0", TAG+="systemd", ENV{SYSTEMD_WANTS}="gesture-engine.service"

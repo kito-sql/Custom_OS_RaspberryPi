@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+"""Fullscreen ScreenFlex boot splash rendered in the portrait X session."""
+import os
+import sys
+import tkinter as tk
+from pathlib import Path
+from PIL import Image, ImageTk
+
+DURATION_MS = int(os.environ.get("SCREENFLEX_SPLASH_SECONDS", "3")) * 1000
+
+
+def main() -> int:
+    root = tk.Tk()
+    root.configure(background="#000000")
+    root.overrideredirect(True)
+    root.attributes("-fullscreen", True)
+    root.attributes("-topmost", True)
+    root.config(cursor="none")
+    root.update_idletasks()
+    width, height = root.winfo_screenwidth(), root.winfo_screenheight()
+    root.geometry(f"{width}x{height}+0+0")
+    root.deiconify()
+    root.lift()
+    root.focus_force()
+
+    # Dynamically select image path based on screen aspect ratio
+    image_env = os.environ.get("SCREENFLEX_SPLASH_IMAGE")
+    if image_env:
+        image_path = Path(image_env)
+    else:
+        if width < height:
+            image_path = Path("/home/dietpi/splash_portrait.png")
+            if not image_path.is_file():
+                image_path = Path("/home/dietpi/splash.png")
+        else:
+            image_path = Path("/home/dietpi/splash.png")
+            if not image_path.is_file():
+                image_path = Path("/home/dietpi/splash_portrait.png")
+
+    if not image_path.is_file():
+        print(f"Splash image is unavailable: {image_path}", file=sys.stderr)
+        root.destroy()
+        return 1
+
+    try:
+        image = Image.open(image_path).convert("RGB")
+        image = image.resize((width, height), Image.Resampling.LANCZOS)
+        photo = ImageTk.PhotoImage(image)
+        label = tk.Label(root, image=photo, bd=0, highlightthickness=0, background="#000000")
+        label.image = photo
+        label.place(x=0, y=0, width=width, height=height)
+    except Exception as exc:
+        root.destroy()
+        print(f"Unable to render splash: {exc}", file=sys.stderr)
+        return 1
+    root.after(max(DURATION_MS, 1), root.destroy)
+    root.mainloop()
+    return 0
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,11 @@
+---
+- name: Configure DietPi OS Signage & Gesture Control Kiosk
+  hosts: kiosks
+  become: true
+  roles:
+    - { role: common, tags: ['common', 'system'] }
+    - { role: network, tags: ['network', 'system'] }
+    - { role: kiosk, tags: ['kiosk'] }
+    - { role: python_env, tags: ['python_env'] }
+    - { role: services, tags: ['services', 'python'] }
+

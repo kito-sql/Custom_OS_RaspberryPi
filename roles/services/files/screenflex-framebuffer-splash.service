@@ -1,0 +1,13 @@
+[Unit]
+Description=ScreenFlex portrait X splash compatibility barrier
+DefaultDependencies=no
+After=local-fs.target
+Before=screenflex-kiosk.service getty@tty1.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/true
+
+# The splash is rendered by screenflex-boot-session inside the rotated X session.
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Own the one X11 session used for both boot-time Wi-Fi and the kiosk.
+set -euo pipefail
+
+export DISPLAY="${DISPLAY:-:0}"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/screenflex-runtime}"
+
+mkdir -p "$XDG_RUNTIME_DIR"
+chmod 700 "$XDG_RUNTIME_DIR"
+
+# Keep the uncovered X root black throughout boot and the Wi-Fi-to-kiosk handoff.
+xsetroot -solid '#000000' 2>/dev/null || true
+xset -dpms s off s noblank 2>/dev/null || true
+
+# Start the kiosk window manager and compositor before the boot splash and Wi-Fi
+# overlay map. They remain alive beneath both, avoiding a cold-start flash later.
+xhost +SI:localuser:kiosk >/dev/null 2>&1 || true
+if ! pgrep -u kiosk -x openbox >/dev/null 2>&1; then
+    runuser -u kiosk -- env DISPLAY="$DISPLAY" XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" \
+        HOME=/home/kiosk USER=kiosk LOGNAME=kiosk /usr/bin/openbox >/dev/null 2>&1 &
+fi
+if command -v picom >/dev/null 2>&1 && ! pgrep -u kiosk -x picom >/dev/null 2>&1; then
+    runuser -u kiosk -- env DISPLAY="$DISPLAY" XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" \
+        HOME=/home/kiosk USER=kiosk LOGNAME=kiosk \
+        /usr/bin/picom --backend xrender --use-damage --no-fading-openclose --config /home/kiosk/.config/picom.conf \
+        >/dev/null 2>&1 &
+fi
+for _ in $(seq 1 20); do
+    pgrep -u kiosk -x openbox >/dev/null 2>&1 && break
+    sleep 0.1
+done
+xsetroot -solid '#000000' 2>/dev/null || true
+
+# Render the splash in X rather than /dev/fb0, so it follows the OS portrait
+# transform (Rotate right) exactly.
+/usr/local/sbin/screenflex-x-splash
+xsetroot -solid '#000000' 2>/dev/null || true
+
+# Wi-Fi failure is intentionally fail-open: report it, then always hand off
+# to the kiosk so the in-session recovery shortcut remains available.
+if /usr/bin/python3 /opt/wifi-provision/wifi_provision.py; then
+    echo "Wi-Fi provisioning completed; launching kiosk." >&2
+else
+    provision_status=$?
+    echo "Wi-Fi provisioning exited ${provision_status}; launching kiosk anyway." >&2
+fi
+
+/usr/bin/systemd-notify --ready --status='Starting kiosk'
+exec runuser -u kiosk -- env \
+    DISPLAY="$DISPLAY" \
+    XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" \
+    HOME=/home/kiosk \
+    USER=kiosk \
+    LOGNAME=kiosk \
+    /usr/local/bin/screenflex-kiosk

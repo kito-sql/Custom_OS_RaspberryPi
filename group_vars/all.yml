@@ -1,0 +1,5 @@
+---
+kiosk_user: kiosk
+python_version: 3.11
+venv_path: /home/.venv
+target_ip: 172.16.137.113

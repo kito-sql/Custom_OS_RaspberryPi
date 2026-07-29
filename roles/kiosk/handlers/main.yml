@@ -1,0 +1,3 @@
+---
+- name: Reconfigure Openbox
+  command: "runuser -u {{ kiosk_user }} -- env DISPLAY=:0 openbox --reconfigure"

@@ -1,0 +1,26 @@
+#!/bin/bash
+# gesture-logs - view logs for gesture engine and overlay
+# Usage: gesture-logs [engine|overlay] [journalctl-opts]
+
+case "${1:-both}" in
+  engine)
+    shift
+    journalctl -u gesture-engine "$@"
+    ;;
+  overlay)
+    shift
+    journalctl -u gesture-overlay "$@"
+    ;;
+  both|"")
+    echo "=== Gesture Engine ==="
+    journalctl -u gesture-engine -n 30 --no-pager
+    echo ""
+    echo "=== Gesture Overlay ==="
+    journalctl -u gesture-overlay -n 30 --no-pager
+    echo ""
+    echo "---"
+    echo "Usage: gesture-logs [engine|overlay] [opts]"
+    echo "  gesture-logs -f         follow both"
+    echo "  gesture-logs engine -f  follow engine"
+    ;;
+esac

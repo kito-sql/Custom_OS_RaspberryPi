@@ -1,0 +1,25 @@
+---
+- name: Install uv for fast pip packages management
+  pip:
+    name: uv
+    state: present
+    extra_args: --break-system-packages
+
+- name: Install Python {{ python_version }} via uv
+  command: "uv python install {{ python_version }}"
+
+- name: Create virtualenv under {{ venv_path }}
+  command: "uv venv --python {{ python_version }} {{ venv_path }}"
+  args:
+    creates: "{{ venv_path }}/bin/python"
+
+- name: Deploy requirements.txt
+  copy:
+    src: requirements.txt
+    dest: "{{ venv_path }}/requirements.txt"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Install pip dependencies in venv via uv
+  command: "uv pip install --python {{ venv_path }} -r {{ venv_path }}/requirements.txt"

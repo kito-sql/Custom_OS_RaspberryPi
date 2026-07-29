@@ -1,0 +1,24 @@
+[Unit]
+Description=Gesture Engine - MediaPipe WebSocket Server & Overlay GUI
+After=network.target screenflex-kiosk.service
+Wants=network.target
+# Requires=screenflex-kiosk.service removed: engine starts independently
+# and waits for the kiosk X session via ExecStartPre X11 socket check
+
+[Service]
+CPUAffinity=0,1
+Type=simple
+User=root
+WorkingDirectory=/home
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/kiosk/.Xauthority
+Environment=XDG_RUNTIME_DIR=/run/user/0
+Environment=QT_QPA_PLATFORM=xcb
+ExecStartPre=/bin/sh -c 'mkdir -p /run/user/0 && chmod 700 /run/user/0'
+ExecStartPre=/bin/sh -c 'for i in $(seq 1 30); do [ -e /tmp/.X11-unix/X0 ] && break; sleep 1; done'
+ExecStart=/home/.venv/bin/python /home/gesture_engine.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

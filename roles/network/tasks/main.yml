@@ -1,0 +1,46 @@
+---
+- name: Configure interfaces auto-bringup for eth0
+  copy:
+    src: interfaces
+    dest: /etc/network/interfaces
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Ensure NetworkManager configuration directory exists
+  file:
+    path: /etc/NetworkManager/conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Deploy NetworkManager config to keep NM off wlan0 (wpa_supplicant handles it)
+  copy:
+    src: 10-unmanaged-wifi.conf
+    dest: /etc/NetworkManager/conf.d/10-unmanaged-wifi.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Deploy USB camera udev rules
+  copy:
+    src: 99-gesture-camera.rules
+    dest: /etc/udev/rules.d/99-gesture-camera.rules
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Deploy custom modprobe.d configuration files
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/modprobe.d/{{ item }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - dietpi-disable_rpi_audio.conf
+    - dietpi-disable_rpi_camera.conf
+    - dietpi-disable_rpi_codec.conf
+    - dietpi-disable_vcsm.conf
+    - screenflex-codec.conf

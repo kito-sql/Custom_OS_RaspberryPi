@@ -1,0 +1,57 @@
+---
+- name: Create kiosk user account
+  user:
+    name: "{{ kiosk_user }}"
+    shell: /bin/bash
+    groups: video,audio,input,render
+    append: true
+
+- name: Ensure kiosk config directories exist
+  file:
+    path: "/home/{{ kiosk_user }}/.config/openbox"
+    state: directory
+    owner: "{{ kiosk_user }}"
+    group: "{{ kiosk_user }}"
+    mode: '0755'
+    recurse: true
+
+- name: Deploy Openbox rc.xml key bindings config
+  copy:
+    src: rc.xml
+    dest: "/home/{{ kiosk_user }}/.config/openbox/rc.xml"
+    owner: "{{ kiosk_user }}"
+    group: "{{ kiosk_user }}"
+    mode: '0644'
+  notify: Reconfigure Openbox
+
+- name: Deploy picom compositor config
+  copy:
+    src: picom.conf
+    dest: "/home/{{ kiosk_user }}/.config/picom.conf"
+    owner: "{{ kiosk_user }}"
+    group: "{{ kiosk_user }}"
+    mode: '0644'
+
+- name: Deploy general X11 config xorg.conf
+  copy:
+    src: xorg.conf
+    dest: /etc/X11/xorg.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Ensure /etc/X11/xorg.conf.d directory exists
+  file:
+    path: /etc/X11/xorg.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Deploy screen rotation X11 config 99-screenflex-rotation.conf
+  copy:
+    src: xorg.conf.d/99-screenflex-rotation.conf
+    dest: /etc/X11/xorg.conf.d/99-screenflex-rotation.conf
+    owner: "{{ kiosk_user }}"
+    group: "{{ kiosk_user }}"
+    mode: '0666'

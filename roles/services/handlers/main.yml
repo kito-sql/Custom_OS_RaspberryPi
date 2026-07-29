@@ -1,0 +1,5 @@
+---
+- name: Restart gesture engine
+  systemd:
+    name: gesture-engine.service
+    state: restarted

@@ -1,0 +1,187 @@
+---
+- name: Copy gesture engine scripts to /home/
+  copy:
+    src: "{{ item }}"
+    dest: "/home/{{ item }}"
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - gesture_engine.py
+    - overlay.py
+    - input_shape_helper.py
+  notify: Restart gesture engine
+
+- name: Copy MediaPipe task files to /home/
+  copy:
+    src: hand_landmarker.task
+    dest: /home/hand_landmarker.task
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Ensure /var/log/gesture directory exists
+  file:
+    path: /var/log/gesture
+    state: directory
+    owner: root
+    group: root
+    mode: '0777'
+
+- name: Deploy binary wrappers to /usr/local/bin/
+  copy:
+    src: "{{ item }}"
+    dest: "/usr/local/bin/{{ item }}"
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - cpu-cap.sh
+    - gesture-collect-logs.sh
+    - gesture-logs
+    - keep-overlay-ontop.sh
+    - launch-wifi-provision.sh
+    - prepare-offline-test.sh
+    - rotate-screen.sh
+    - screenflex-kiosk
+
+- name: Deploy boot session scripts to /usr/local/sbin/
+  copy:
+    src: "{{ item }}"
+    dest: "/usr/local/sbin/{{ item }}"
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - screenflex-boot-session
+    - screenflex-x-splash
+
+- name: Create /opt/wifi-provision directory
+  file:
+    path: /opt/wifi-provision
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Deploy Wi-Fi provisioning Python scripts
+  copy:
+    src: "{{ item }}"
+    dest: "/opt/wifi-provision/{{ item }}"
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - wifi_provision.py
+    - wifi_connector.py
+    - wifi_overlay.py
+    - wifi_scanner.py
+
+- name: Create screenflex-player symlink in /home/dietpi/
+  file:
+    src: "/opt/Screenflex Player/screenflex-player"
+    dest: "/home/dietpi/screenflex-player"
+    state: link
+
+- name: Ensure /home/dietpi directory exists
+  file:
+    path: /home/dietpi
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Deploy splash image
+  copy:
+    src: splash.png
+    dest: /home/dietpi/splash.png
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Check if Screenflex Player deb package is present
+  find:
+    paths: /home/dietpi
+    patterns: "screenflex-player_*_arm64.deb"
+  register: deb_files
+
+- name: Install Screenflex Player deb package
+  apt:
+    deb: "{{ item.path }}"
+  loop: "{{ deb_files.files }}"
+  when: deb_files.matched > 0
+
+- name: Deploy systemd service unit files
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - screenflex-kiosk.service
+    - gesture-engine.service
+    - cpu-cap.service
+    - cpu-governor.service
+    - dietpi-postboot.service
+    - dietpi-preboot.service
+    - dietpi-ramlog.service
+    - dietpi-wifi-monitor.service
+    - gesture-log-collector.service
+    - gesture-overlay.service
+    - input-shape-helper.service
+    - screenflex-framebuffer-splash.service
+    - keep-gesture-overlay-ontop.service
+
+- name: Ensure custom service drop-in directories exist
+  file:
+    path: "/etc/systemd/system/{{ item }}.d"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - gesture-engine.service
+    - gesture-overlay.service
+    - screenflex-kiosk.service
+
+- name: Deploy service drop-ins
+  copy:
+    src: "{{ item.src }}"
+    dest: "/etc/systemd/system/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - {src: wifi-provision.conf, dest: screenflex-kiosk.service.d/wifi-provision.conf}
+    - {src: 10-wait-camera.conf, dest: gesture-engine.service.d/10-wait-camera.conf}
+    - {src: 10-p1-camera-restart-guard.conf, dest: gesture-engine.service.d/10-p1-camera-restart-guard.conf}
+
+- name: Reload systemd manager configuration
+  systemd:
+    daemon_reload: true
+
+- name: Enable service list
+  systemd:
+    name: "{{ item }}"
+    enabled: true
+  loop:
+    - dietpi-wifi-monitor.service
+    - gesture-overlay.service
+    - screenflex-framebuffer-splash.service
+    - screenflex-kiosk.service
+    - input-shape-helper.service
+    - gesture-log-collector.service
+    - cpu-governor.service
+    - cpu-cap.service
+    - dietpi-postboot.service
+    - dietpi-preboot.service
+    - dietpi-ramlog.service
+
+- name: Ensure gesture-engine.service and wifi-portal are disabled from boot
+  systemd:
+    name: "{{ item }}"
+    enabled: false
+  loop:
+    - gesture-engine.service
+    - keep-gesture-overlay-ontop.service

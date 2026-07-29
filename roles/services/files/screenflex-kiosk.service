@@ -1,0 +1,29 @@
+[Unit]
+Description=ScreenFlex Player kiosk
+DefaultDependencies=no
+Wants=screenflex-framebuffer-splash.service
+After=local-fs.target screenflex-framebuffer-splash.service
+Before=getty@tty1.service multi-user.target gesture-engine.service gesture-overlay.service
+
+[Service]
+Type=notify
+NotifyAccess=all
+User=root
+Group=root
+SupplementaryGroups=video input render audio
+WorkingDirectory=/opt/wifi-provision
+Environment=DISPLAY=:0
+Environment=XDG_RUNTIME_DIR=/tmp/screenflex-runtime
+TTYPath=/dev/tty1
+TTYReset=no
+TTYVHangup=no
+StandardInput=tty
+StandardOutput=journal
+StandardError=journal
+ExecStart=/usr/bin/xinit /usr/local/sbin/screenflex-boot-session -- /usr/bin/X :0 vt1 -keeptty -br -nolisten tcp -nocursor
+Restart=on-failure
+RestartPreventExitStatus=10
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

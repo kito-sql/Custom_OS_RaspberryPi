@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openbox_config xmlns="http://openbox.org/3.4/rc"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+<applications>
+  <application name="GestureOverlay" class="GestureOverlay">
+    <layer>above</layer>
+    <skip_taskbar>yes</skip_taskbar>
+    <skip_pager>yes</skip_pager>
+    <fullscreen>yes</fullscreen>
+    <focus>no</focus>
+    <desktop>all</desktop>
+    <type>normal</type>
+  </application>
+  <application name="screenflex-player" class="screenflex-player">
+    <layer>normal</layer>
+    <fullscreen>yes</fullscreen>
+    <decor>no</decor>
+    <maximized>true</maximized>
+  </application>
+  <application name="Screenflex" class="Screenflex">
+    <layer>normal</layer>
+    <fullscreen>yes</fullscreen>
+    <decor>no</decor>
+    <maximized>true</maximized>
+    <position force="yes"><x>0</x><y>0</y></position>
+    <size force="yes"><width>1920</width><height>1080</height></size>
+  </application>
+</applications>
+<keyboard>
+  <keybind key="F11">
+    <action name="Execute"><command>true</command></action>
+  </keybind>
+  <keybind key="Escape">
+    <action name="Execute"><command>true</command></action>
+  </keybind>
+  <keybind key="C-W-o">
+    <action name="Execute">
+      <command>/usr/local/bin/rotate-screen.sh</command>
+    </action>
+  </keybind>
+  <keybind key="A-F4">
+    <action name="Execute"><command>true</command></action>
+  </keybind>
+  <keybind key="C-W-w">
+    <action name="Execute">
+      <command>/usr/local/bin/launch-wifi-provision.sh</command>
+    </action>
+  </keybind>
+</keyboard>
+</openbox_config>

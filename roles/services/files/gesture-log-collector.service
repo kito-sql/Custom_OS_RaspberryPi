@@ -1,0 +1,12 @@
+[Unit]
+Description=Gesture Boot Log Collector
+After=gesture-engine.service gesture-overlay.service
+Requires=gesture-engine.service gesture-overlay.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/gesture-collect-logs.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
