@@ -89,6 +89,7 @@ kiosk-os-provisioning/
 
 ## 4. Setup & Deployment
 
+<<<<<<< HEAD
 ### Step 1: Configure Fleet Inventory
 Add your target Raspberry Pis to `inventory.ini`:
 ```ini
@@ -116,6 +117,31 @@ Execute the playbook against all inventory hosts:
 ansible-playbook -i inventory.ini playbooks/site.yml
 ```
 *(Or specify a single host directly: `ansible-playbook -i "172.16.137.113," -u root playbooks/site.yml`)*
+=======
+### Step 1: Configure Target Variables
+Open `group_vars/all.yml` and adjust the configuration to match your environment:
+```yaml
+---
+kiosk_user: kiosk
+python_version: 3.11
+venv_path: /home/.venv
+target_ip: 172.16.137.109  # Change this to your Pi's current IP address
+```
+
+### Step 2: Establish SSH Access
+Ensure you can connect to the target machine without password prompts. Copy your SSH key to the Pi:
+```bash
+ssh-copy-id root@172.16.137.109
+```
+*(Use the root password `flex` if deploying to a default ScreenFlex image).*
+
+### Step 3: Run the Provisioning Playbook
+Execute the playbook from the root of this folder:
+```bash
+ansible-playbook -i "172.16.137.109," -u root playbooks/site.yml
+```
+*(Note: The comma after the IP address is required when passing a single host directly to the `-i` parameter).*
+>>>>>>> c259889183fa7e66bde170dcc76207c4d4a99a21
 
 ---
 
@@ -155,6 +181,7 @@ journalctl -u gesture-engine.service -f
 
 ## 6. Modifying & Updating the System
 
+<<<<<<< HEAD
 Any changes to code, configurations, or shortcuts should be made locally on your workstation first, then pushed to your Pi fleet using Ansible.
 
 ### Fast Python Script Updates Across Fleet
@@ -178,4 +205,23 @@ Ansible evaluates differences between your local workspace and the Pis. It only 
 * **Openbox configuration (`rc.xml`) changes** automatically trigger an Openbox reconfigure inside the active GUI session.
 * **Python script updates** automatically trigger a restart of `gesture-engine.service` on the target Pis.
 
+=======
+Any changes to code, configurations, or shortcuts should be made locally on your workstation first, then pushed to the Pi using Ansible.
+
+### Step 1: Make Local Modifications
+* **Update python scripts**: Edit the source files under `roles/services/files/` (e.g., `gesture_engine.py`, `overlay.py`).
+* **Modify keyboard shortcuts**: Edit the Openbox configuration at `roles/kiosk/files/rc.xml`.
+* **Adjust system configuration**: Edit udev rules or interfaces in `roles/network/files/`.
+
+### Step 2: Push Changes
+Run the playbook again:
+```bash
+ansible-playbook -i "172.16.137.109," -u root playbooks/site.yml
+```
+
+### Automatic Service Reloading & Restarts (Handlers)
+Ansible evaluates differences between your local workspace and the Pi. It only uploads files that have changed. It is also configured with **handlers** that automatically reload the updated service components without requiring a full system reboot:
+* **Openbox configuration (`rc.xml`) changes** automatically trigger an Openbox reconfigure inside the Pi's active GUI session.
+* **Python script updates** automatically trigger a restart of `gesture-engine.service` on the Pi.
+>>>>>>> c259889183fa7e66bde170dcc76207c4d4a99a21
 
